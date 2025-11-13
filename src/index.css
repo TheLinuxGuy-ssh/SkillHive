@@ -1,3 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "popreg";
+}
+
+@font-face {
+  font-family: "popreg";
+  src: url(./assets/fonts/poppins/Poppins-Regular.ttf);
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
