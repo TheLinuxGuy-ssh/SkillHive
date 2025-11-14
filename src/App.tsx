@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from "react-router";
 import './App.css'
-import Dashboard from "./pages/Dashboard"
+import * as Page from "./pages";
+import * as Comp from "./components";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-      <Dashboard></Dashboard>
+      <Comp.Nav />
+      <Routes>
+        <Route path="/" element={<Page.Landing />} />
+        <Route path="/home" element={<Page.Home />} />
+        <Route path="/learn" element={<Page.Learn />} />
+        <Route path="/chat" element={<Page.Messages />} />
+      </Routes>
     </>
   )
 }
