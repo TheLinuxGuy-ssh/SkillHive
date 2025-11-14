@@ -9,6 +9,10 @@
   src: url(./assets/fonts/poppins/Poppins-Regular.ttf);
 }
 
+.transition-ui {
+   @apply transition duration-300 ease-in-out;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
