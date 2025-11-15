@@ -10,7 +10,7 @@ const Home = () => {
                             <div className="profile-details p-4">
                                 <div className="profile-highlights flex justify-center mb-5">
                                     <div className="profile-followers w-[37.5%] flex flex-col justify-end items-center">
-                                        <div className="high-number">
+                                        <div className="high-number font-bold text-md">
                                             1342
                                         </div>
                                         <div className="high-title">
@@ -21,7 +21,7 @@ const Home = () => {
                                         <img className="w-full h-full" src="/src/assets/tlg.png" alt="" />
                                     </div>
                                     <div className="profile-trust w-[37.55%] flex flex-col justify-end items-center">
-                                        <div className="high-number">
+                                        <div className="high-number font-bold text-md">
                                             453
                                         </div>
                                         <div className="high-title">
@@ -38,9 +38,38 @@ const Home = () => {
                                 <div className="bio my-3 text-center">
                                     Just a Server Administrator
                                 </div>
-                                <div className="profile-btn py-2 px-3 text-center bg-white/5 font-semibold rounded-2xl">
+                                <div className="profile-btn py-2 px-3 text-center bg-white/5 hover:bg-white/10 transition-ui font-semibold rounded-2xl cursor-pointer">
                                     View My Profile
                                 </div>
+                            </div>
+                        </div>
+                        <div className="skill-tags mt-4 p-1 bg-[#292928] rounded-2xl">
+                            <h2 className="p-3 text-xl font-bold">Skills</h2>
+                            <div className="flex flex-wrap">
+                            <div className="tag">
+                                UI/UX
+                            </div>
+                            <div className="tag">
+                                Programming
+                            </div>
+                            <div className="tag">
+                                Finance
+                            </div>
+                            <div className="tag">
+                                Musical
+                            </div>
+                            <div className="tag">
+                                Sports
+                            </div>
+                            <div className="tag">
+                                Gaming
+                            </div>
+                            <div className="tag">
+                                Languages
+                            </div>
+                            <div className="tag">
+                                Other
+                            </div>
                             </div>
                         </div>
                     </div>
