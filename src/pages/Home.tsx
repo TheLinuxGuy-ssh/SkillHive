@@ -5,7 +5,7 @@ const Home = () => {
                 <div className="content-left w-[20%]">
                     <div className="profile-card bg-[#292928] rounded-2xl overflow-hidden">
                         <div className="profilebanner w-full h-20">
-                            <img src="/src/assets/banner.jpg" alt="" />
+                            <img src="/banner.jpg" alt="" />
                         </div>
                         <div className="profile-details p-4">
                             <div className="profile-highlights flex justify-center mb-5">
@@ -18,7 +18,7 @@ const Home = () => {
                                     </div>
                                 </div>
                                 <div className="profile-photo w-[25%] h-21 rounded-2xl overflow-hidden border-1">
-                                    <img className="w-full h-full" src="/src/assets/tlg.png" alt="" />
+                                    <img className="w-full h-full" src="/tlg.png" alt="" />
                                 </div>
                                 <div className="profile-trust w-[37.55%] flex flex-col justify-end items-center">
                                     <div className="high-number font-bold text-md">
@@ -84,7 +84,7 @@ const Home = () => {
                         </div>
                         <div className="community p-1 m-1 flex items-center">
                             <div className="community-img w-17 rounded-2xl border-3 border-white/8">
-                                <img className="w-full h-full rounded-2xl" src="/src/assets/tlg.png" alt="" />
+                                <img className="w-full h-full rounded-2xl" src="/tlg.png" alt="" />
                             </div>
                             <div className="community-details m-2 text-lg">
                                 <div className="community-name font-display-bold">
@@ -108,7 +108,7 @@ const Home = () => {
                         <div className="activity-card m-1 p-1">
                             <div className="activity-content flex ">
                                 <div className="activity-img w-20 h-20 rounded-2xl overflow-hidden border-3 border-white/7">
-                                    <img className="w-full h-full" src="/src/assets/tlg.png" alt="" />
+                                    <img className="w-full h-full" src="/tlg.png" alt="" />
                                 </div>
                                 <div className="activity-details flex flex-col justify-center ml-2">
                                     <div className="activity-name text-lg font-display-bold">
