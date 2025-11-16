@@ -101,7 +101,26 @@ const Home = () => {
 
                 </div>
                 <div className="content-right w-[20%]">
-
+                    <div className="activity-card bg-[#292928] w-full h-full rounded-2xl p-1">
+                        <h2 className="text-xl font-display-bold p-3">
+                           Recent Activity 
+                        </h2>
+                        <div className="activity-card m-1 p-1">
+                            <div className="activity-content flex ">
+                                <div className="activity-img w-20 h-20 rounded-2xl overflow-hidden border-3 border-white/7">
+                                    <img className="w-full h-full" src="/src/assets/tlg.png" alt="" />
+                                </div>
+                                <div className="activity-details flex flex-col justify-center ml-2">
+                                    <div className="activity-name text-lg font-display-bold">
+                                        TheDesignGuy
+                                    </div>
+                                    <div className="activity text-xs">
+                                        <span className="text-gray-400">Sent you Job Request</span><i className="fa-solid text-xs text-[#fffd01] fa-circle mx-2"></i><span className="text-[#fffd01]">3 mins ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </>
