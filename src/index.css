@@ -2,11 +2,17 @@
 
 @theme {
   --font-display: "popreg";
+  --font-display-bold: "popreg-bold";
 }
 
 @font-face {
   font-family: "popreg";
   src: url(./assets/fonts/poppins/Poppins-Regular.ttf);
+}
+
+@font-face {
+  font-family: "popreg-bold";
+  src: url(./assets/fonts/poppins/Poppins-Bold.ttf);
 }
 
 .transition-ui {
