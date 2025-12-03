@@ -1,3 +1,5 @@
+import { Tag } from "../components";
+
 const Home = () => {
     return (
         <>
@@ -46,30 +48,30 @@ const Home = () => {
                     <div className="skill-tags mt-4 p-1 bg-[#292928] rounded-2xl">
                         <h2 className="p-3 text-xl font-display-bold">Skills</h2>
                         <div className="flex flex-wrap">
-                            <div className="tag">
-                                UI/UX
-                            </div>
-                            <div className="tag">
+                            <Tag>
+                                UI/UX   
+                            </Tag>
+                            <Tag>
                                 Programming
-                            </div>
-                            <div className="tag">
+                            </Tag>
+                            <Tag>
                                 Finance
-                            </div>
-                            <div className="tag">
+                            </Tag>
+                            <Tag>
                                 Musical
-                            </div>
-                            <div className="tag">
+                            </Tag>
+                            <Tag>
                                 Sports
-                            </div>
-                            <div className="tag">
+                            </Tag>
+                            <Tag>
                                 Gaming
-                            </div>
-                            <div className="tag">
+                            </Tag>
+                            <Tag>
                                 Languages
-                            </div>
-                            <div className="tag">
+                            </Tag>
+                            <Tag>
                                 Other
-                            </div>
+                            </Tag>
                         </div>
                     </div>
                     <div className="communities mt-4 p-1 bg-[#292928] rounded-2xl">
@@ -98,7 +100,7 @@ const Home = () => {
                     </div>
                 </div>
                 <div className="content-middle w-[60%]">
-
+                        
                 </div>
                 <div className="content-right w-[20%]">
                     <div className="activity-card bg-[#292928] w-full h-full rounded-2xl p-1">
