@@ -1,3 +1,5 @@
+<img width="1983" height="793" alt="SkillHiive Banner" src="https://github.com/user-attachments/assets/c5f7801e-c4f7-4db1-9f69-f79653b9bccf" />
+
 # SkillHiive Web
 
 If you are reading this, you are looking at the web foundation of SkillHiive.
