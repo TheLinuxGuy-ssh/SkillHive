@@ -23,7 +23,10 @@ import { useTokens } from "@/theme/useTokens";
 
 const LIVEKIT_URL = "wss://rooms.skillhiive.com";
 const TOKEN_ENDPOINT = "https://api.skillhivelabs.com/getToken";
+const TOKEN_FETCH_MAX_ATTEMPTS = 5;
 const SPEAKER_DEBOUNCE_MS = 800;
+const MAX_AUTO_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 3000;
 const TILES_PER_PAGE = 6;
 const SIDEBAR_W = 300;
 const TILE_ASPECT = 16 / 9;
@@ -154,6 +157,7 @@ export default function RoomScreen({
   const [livekitReady, setLivekitReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reconnecting, setReconnecting] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [micEnabled, setMicEnabled] = useState(false);
@@ -179,8 +183,7 @@ export default function RoomScreen({
   const cubicleRef = useRef<CubicleState>({ status: "idle" });
   const shownCubicleAlertRef = useRef<string | null>(null);
   const prevPhaseRef = useRef<string>("waiting");
-  const autoRetryRef = useRef(0);
-  const retryScheduledRef = useRef(false);
+  const reconnectAttemptRef = useRef(0);
 
   const { colors } = useTokens();
 
@@ -241,33 +244,35 @@ export default function RoomScreen({
   useEffect(() => {
     if (!livekitReady || !token) return;
     connectedRef.current = false;
-    retryScheduledRef.current = false;
 
+    const delay = BASE_RETRY_DELAY_MS * Math.pow(2, reconnectAttemptRef.current);
     const t = setTimeout(() => {
-      if (connectedRef.current || retryScheduledRef.current) return;
-      if (autoRetryRef.current < 1) {
-        autoRetryRef.current += 1;
-        retryScheduledRef.current = true;
+      if (connectedRef.current) return;
+      if (reconnectAttemptRef.current < MAX_AUTO_RETRIES) {
+        const nextAttempt = reconnectAttemptRef.current + 1;
+        reconnectAttemptRef.current = nextAttempt;
+        setReconnecting(true);
         setToken(null);
         setLivekitReady(false);
         setError(null);
         setRetryTick((x) => x + 1);
       } else {
         setError("Couldn't connect to the room. Please retry.");
+        setReconnecting(false);
       }
-    }, 6000);
+    }, delay);
 
     return () => clearTimeout(t);
   }, [livekitReady, token, retryTick]);
 
   async function resolveSession() {
     if (!supabase) return null;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) return session;
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 500));
     }
     return null;
   }
@@ -285,7 +290,7 @@ export default function RoomScreen({
     });
 
     let lastErr: unknown = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < TOKEN_FETCH_MAX_ATTEMPTS; attempt++) {
       try {
         const res = await fetch(`${TOKEN_ENDPOINT}?${params.toString()}`, {
           headers,
@@ -521,7 +526,8 @@ export default function RoomScreen({
   const handleConnected = useCallback(async () => {
     if (connectedRef.current) return;
     connectedRef.current = true;
-    autoRetryRef.current = 0;
+    reconnectAttemptRef.current = 0;
+    setReconnecting(false);
     const r = roomRef.current;
     if (!r) return;
 
@@ -592,6 +598,8 @@ export default function RoomScreen({
   const handleDisconnected = useCallback(() => {
     const wasConnected = connectedRef.current;
     connectedRef.current = false;
+    reconnectAttemptRef.current = 0;
+    setReconnecting(false);
     if (intentionalLeaveRef.current) return;
     if (!wasConnected) return;
     onLeave();
@@ -722,7 +730,7 @@ export default function RoomScreen({
           justifyContent: "center",
           gap: 14,
           background: colors.bg.canvas,
-          height: "100vh",
+          height: "100dvh",
         }}
       >
         <div
@@ -750,6 +758,45 @@ export default function RoomScreen({
     );
   }
 
+  if (reconnecting) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 14,
+          background: colors.bg.canvas,
+          height: "100dvh",
+        }}
+      >
+        <div
+          className="spinner"
+          style={{
+            width: 36,
+            height: 36,
+            border: `3px solid ${colors.border.subtle}`,
+            borderTopColor: colors.tint.accent,
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
+        <span
+          style={{
+            color: colors.text.secondary,
+            fontSize: 15,
+            fontWeight: 500,
+          }}
+        >
+          Reconnecting…
+        </span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   if (error || !token || !livekitReady) {
     return (
       <div
@@ -759,7 +806,7 @@ export default function RoomScreen({
           alignItems: "center",
           justifyContent: "center",
           gap: 18,
-          height: "100vh",
+          height: "100dvh",
           background: colors.bg.canvas,
           padding: 24,
         }}
@@ -770,8 +817,8 @@ export default function RoomScreen({
         <div style={{ display: "flex", gap: 12 }}>
           <button
             onClick={() => {
-              autoRetryRef.current = 0;
-              retryScheduledRef.current = false;
+               reconnectAttemptRef.current = 0;
+               setReconnecting(false);
               setError(null);
               setToken(null);
               setLivekitReady(false);
@@ -827,6 +874,18 @@ export default function RoomScreen({
         onError={(e: any) => {
           if (!connectedRef.current) {
             console.warn("LiveKit connect error:", e?.message ?? e);
+            if (reconnectAttemptRef.current < MAX_AUTO_RETRIES) {
+               const nextAttempt = reconnectAttemptRef.current + 1;
+               reconnectAttemptRef.current = nextAttempt;
+               setReconnecting(true);
+              setToken(null);
+              setLivekitReady(false);
+              setError(null);
+              setRetryTick((t) => t + 1);
+            } else {
+              setError("Couldn't connect to the room. Please retry.");
+              setReconnecting(false);
+            }
           }
         }}
         style={{ display: "contents" }}
@@ -835,7 +894,7 @@ export default function RoomScreen({
           style={{
             display: "flex",
             flexDirection: "column",
-            height: "100vh",
+            height: "100dvh",
             background: colors.bg.canvas,
             overflow: "hidden",
             position: "relative",
