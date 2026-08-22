@@ -1,4 +1,4 @@
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 export default function HUD() {
   const RING_SIZE = 320;

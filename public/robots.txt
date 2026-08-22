@@ -1,0 +1,15 @@
+# SkillHiive robots.txt
+User-agent: *
+Allow: /
+
+# Disallow private/authenticated routes
+Disallow: /home
+Disallow: /feed
+Disallow: /profile
+Disallow: /notifications
+Disallow: /settings
+Disallow: /rooms/
+Disallow: /post/
+
+# Sitemap
+Sitemap: https://skillhiive.com/sitemap.xml

@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation, useNavigate } from "react-router";
+import { Routes, Route, useLocation, useNavigate, useParams } from "react-router";
 import { AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import "./Layout.css";
@@ -9,6 +9,7 @@ import { AuthGate } from "./components/AuthGate";
 import { ProfileProvider } from "./hooks/profileContext";
 import { supabase } from "./lib/supabase";
 import Lenis from 'lenis'
+import SEO from "./components/SEO";
 
 const ROUTE_ORDER = ["/", "/learn", "/profile"];
 
@@ -42,6 +43,7 @@ lenis.on('scroll', (e) => {
             path="/"
             element={
               <AuthGate require="guest">
+                <SEO />
                 <Page.Landing />
               </AuthGate>
             }
@@ -50,6 +52,7 @@ lenis.on('scroll', (e) => {
             path="/login"
             element={
               <AuthGate require="guest">
+                <SEO />
                 <Page.Sign />
               </AuthGate>
             }
@@ -58,6 +61,7 @@ lenis.on('scroll', (e) => {
             path="/register"
             element={
               <AuthGate require="guest">
+                <SEO />
                 <Page.Register />
               </AuthGate>
             }
@@ -66,37 +70,42 @@ lenis.on('scroll', (e) => {
             path="/home"
             element={
               <AuthGate require="auth">
+                <SEO />
                 <Page.Home />
               </AuthGate>
             }
           />
           <Route path="/learn" element={
             <AuthGate require="auth">
+              <SEO />
               <Page.Learn />
             </AuthGate>
           } />
           <Route path="/feed" element={
             <AuthGate require="auth">
+              <SEO />
               <Page.Feed />
             </AuthGate>
           } />
           <Route path="/profile" element={
             <AuthGate require="auth">
+              <SEO />
               <Page.Profile />
             </AuthGate>
           } />
           <Route path="/profile/:id" element={
             <AuthGate require="auth">
-              <Page.PublicProfile />
+              <PublicProfileWithSEO />
             </AuthGate>
           } />
           <Route path="/post/:postId" element={
             <AuthGate require="auth">
-              <Page.Post />
+              <PostWithSEO />
             </AuthGate>
           } />
           <Route path="/notifications" element={
             <AuthGate require="auth">
+              <SEO />
               <Page.Notifications />
             </AuthGate>
           } />
@@ -104,6 +113,7 @@ lenis.on('scroll', (e) => {
             path="/rooms/:roomName"
             element={
               <AuthGate require="auth">
+                <SEO />
                 <Page.Room supabase={supabase} onLeave={() => router("/")} />
               </AuthGate>
             }
@@ -112,6 +122,7 @@ lenis.on('scroll', (e) => {
             path="/settings/profile"
             element={
               <AuthGate require="auth">
+                <SEO />
                 <Page.SettingsProfile />
               </AuthGate>
             }
@@ -129,6 +140,26 @@ export default function App() {
       <Cursor />
       <Comp.Nav />
       <AnimatedRoutes />
+    </>
+  );
+}
+
+function PublicProfileWithSEO() {
+  const params = useParams<{ id: string }>();
+  return (
+    <>
+      <SEO dynamicParams={{ id: params.id ?? "" }} />
+      <Page.PublicProfile />
+    </>
+  );
+}
+
+function PostWithSEO() {
+  const params = useParams<{ postId: string }>();
+  return (
+    <>
+      <SEO dynamicParams={{ id: params.postId ?? "" }} />
+      <Page.Post />
     </>
   );
 }
