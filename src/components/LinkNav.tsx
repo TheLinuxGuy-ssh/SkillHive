@@ -114,6 +114,20 @@ export const LinkNav = () => {
           tabRefs={tabRefs}
           setPosition={setPosition}
           position={position}
+          to="/rooms"
+          iconType="solid"
+          icon="door-open"
+          isActiveByCursor={isActiveByCursor}
+        >
+          Rooms
+        </Tab>
+      )}
+      {session && (
+        <Tab
+          index={2}
+          tabRefs={tabRefs}
+          setPosition={setPosition}
+          position={position}
           to="/feed"
           iconType="regular"
           icon="comment"
@@ -122,8 +136,22 @@ export const LinkNav = () => {
           Feed
         </Tab>
       )}
+      {session && (
+        <Tab
+          index={3}
+          tabRefs={tabRefs}
+          setPosition={setPosition}
+          position={position}
+          to="/review"
+          iconType="solid"
+          icon="calendar-check"
+          isActiveByCursor={isActiveByCursor}
+        >
+          Review
+        </Tab>
+      )}
       <Tab
-        index={2}
+        index={4}
         tabRefs={tabRefs}
         setPosition={setPosition}
         position={position}

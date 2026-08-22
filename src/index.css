@@ -185,6 +185,18 @@ html.dark body {
   user-select: none;
 }
 
+/* Immersive focus mode (solo daily driver) hides the nav and keeps the
+   custom cursor above the full-screen focus overlay. */
+body.focus-mode .nav {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+body.focus-mode .cursor-dot,
+body.focus-mode .cursor-glow {
+  z-index: 2000;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

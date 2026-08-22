@@ -1,5 +1,7 @@
 export { default as Sign } from "./Sign";
 export { default as Home } from "./Home";
+export { default as Rooms } from "./Rooms";
+export { default as Review } from "./Review";
 export { default as Learn } from "./Learn";
 export { default as Feed } from "./Feed";
 export { default as Messages } from "./Messages";
@@ -11,5 +13,7 @@ export { default as Register } from "./Register";
 export { default as Post } from "./Post";
 export { default as Notifications } from "./Notifications";
 export { default as PublicProfile } from "./PublicProfile";
+export { default as UserProfile } from "./UserProfile";
+export { default as Project } from "./Project";
 export { default as SettingsProfile } from "./SettingsProfile";
 export { default as NotFound } from "./NotFound";

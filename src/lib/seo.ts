@@ -105,9 +105,16 @@ export const routeMeta: Record<string, PageMeta> = {
     ogType: "website",
   },
   "/home": {
-    title: "Home — SkillHiive",
-    description: "Your SkillHiive home. Join rooms, see updates from allies, and collaborate with intention.",
+    title: "Today — SkillHiive",
+    description: "Your SkillHiive daily driver. Plan what must happen today, focus, and capture what you shipped.",
     path: "/home",
+    noIndex: true,
+    noFollow: true,
+  },
+  "/rooms": {
+    title: "Work Rooms — SkillHiive",
+    description: "Join a work room and focus alongside allies with a shared rhythm.",
+    path: "/rooms",
     noIndex: true,
     noFollow: true,
   },
@@ -187,6 +194,24 @@ export function getPageMeta(pathname: string, dynamicParams?: Record<string, str
         path: "/rooms/:roomName",
         noIndex: true,
         noFollow: true,
+      },
+    },
+    {
+      pattern: /^\/p\/([^/]+)$/,
+      meta: {
+        title: "Profile — SkillHiive",
+        description: "Focus activity, projects, and shipped work on SkillHiive.",
+        path: "/p/:username",
+        ogType: "profile",
+      },
+    },
+    {
+      pattern: /^\/projects\/([^/]+)$/,
+      meta: {
+        title: "Project — SkillHiive",
+        description: "A project built with intention on SkillHiive.",
+        path: "/projects/:id",
+        ogType: "article",
       },
     },
   ];

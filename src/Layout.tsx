@@ -87,6 +87,18 @@ lenis.on('scroll', (e) => {
               <Page.Feed />
             </AuthGate>
           } />
+          <Route path="/rooms" element={
+            <AuthGate require="auth">
+              <SEO />
+              <Page.Rooms />
+            </AuthGate>
+          } />
+          <Route path="/review" element={
+            <AuthGate require="auth">
+              <SEO />
+              <Page.Review />
+            </AuthGate>
+          } />
           <Route path="/profile" element={
             <AuthGate require="auth">
               <SEO />
@@ -97,6 +109,18 @@ lenis.on('scroll', (e) => {
             <AuthGate require="auth">
               <PublicProfileWithSEO />
             </AuthGate>
+          } />
+          <Route path="/p/:username" element={
+            <>
+              <SEO />
+              <Page.UserProfile />
+            </>
+          } />
+          <Route path="/projects/:id" element={
+            <>
+              <SEO />
+              <Page.Project />
+            </>
           } />
           <Route path="/post/:postId" element={
             <AuthGate require="auth">
