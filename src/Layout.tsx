@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation, useNavigate, useParams } from "react-router";
+import { Routes, Route, useLocation, useNavigate, useParams, Navigate } from "react-router";
 import { AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import "./Layout.css";
@@ -6,7 +6,7 @@ import * as Page from "./pages";
 import * as Comp from "./components";
 import Cursor from "./components/Cursor";
 import { AuthGate } from "./components/AuthGate";
-import { ProfileProvider } from "./hooks/profileContext";
+import { ProfileProvider, useProfile } from "./hooks/profileContext";
 import { supabase } from "./lib/supabase";
 import Lenis from 'lenis'
 import SEO from "./components/SEO";
@@ -93,16 +93,11 @@ lenis.on('scroll', (e) => {
               <Page.Rooms />
             </AuthGate>
           } />
-          <Route path="/review" element={
-            <AuthGate require="auth">
-              <SEO />
-              <Page.Review />
-            </AuthGate>
-          } />
+          <Route path="/review" element={<Navigate to="/home" replace />} />
           <Route path="/profile" element={
             <AuthGate require="auth">
               <SEO />
-              <Page.Profile />
+              <OwnProfile />
             </AuthGate>
           } />
           <Route path="/profile/:id" element={
@@ -151,6 +146,15 @@ lenis.on('scroll', (e) => {
               </AuthGate>
             }
           />
+          <Route
+            path="/settings/trackers"
+            element={
+              <AuthGate require="auth">
+                <SEO />
+                <Page.SettingsTrackers />
+              </AuthGate>
+            }
+          />
           <Route path="*" element={<Page.NotFound />} />
         </Routes>
       </AnimatePresence>
@@ -176,6 +180,44 @@ function PublicProfileWithSEO() {
       <Page.PublicProfile />
     </>
   );
+}
+
+/** /profile → the auto-generated public profile for the signed-in user. */
+function OwnProfile() {
+  const { profile, loading } = useProfile();
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span
+          style={{
+            width: 24,
+            height: 24,
+            border: "2px solid rgba(128,128,128,0.3)",
+            borderTopColor: "#fffd01",
+            borderRadius: "50%",
+            display: "inline-block",
+            animation: "own-profile-spin 0.8s linear infinite",
+          }}
+        />
+        <style>{`@keyframes own-profile-spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (profile?.username) {
+    return <Navigate to={`/p/${profile.username}`} replace />;
+  }
+
+  // No username yet — send them to pick one first.
+  return <Navigate to="/settings/profile" replace />;
 }
 
 function PostWithSEO() {

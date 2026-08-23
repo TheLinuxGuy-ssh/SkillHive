@@ -136,22 +136,8 @@ export const LinkNav = () => {
           Feed
         </Tab>
       )}
-      {session && (
-        <Tab
-          index={3}
-          tabRefs={tabRefs}
-          setPosition={setPosition}
-          position={position}
-          to="/review"
-          iconType="solid"
-          icon="calendar-check"
-          isActiveByCursor={isActiveByCursor}
-        >
-          Review
-        </Tab>
-      )}
       <Tab
-        index={4}
+        index={3}
         tabRefs={tabRefs}
         setPosition={setPosition}
         position={position}

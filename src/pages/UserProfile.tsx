@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Clock, FolderGit2 } from "lucide-react";
+import { ArrowLeft, Clock, FolderGit2, Keyboard, Pencil } from "lucide-react";
 import { Text } from "@/components/ui";
 import { Heatmap } from "@/components/ui/Heatmap";
 import { useTokens } from "@/theme";
+import { useProfile } from "@/hooks/profileContext";
+import { useUserCodingStats } from "@/hooks/useTimeTracker";
+import {
+  LanguageBreakdown,
+  MiniHeatmap,
+  formatDuration,
+} from "@/components/CodingTime";
 import {
   fetchPublicProfile,
   fetchFocusStats,
@@ -30,6 +37,7 @@ export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
   const { colors, spacing, radii } = useTokens();
+  const { profile: me } = useProfile();
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [stats, setStats] = useState<FocusStats | null>(null);
@@ -37,6 +45,9 @@ export default function UserProfile() {
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [shipped, setShipped] = useState<ShippedNote[]>([]);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
+
+  const { stats: codingStats } = useUserCodingStats(profile?.id);
+  const isOwnProfile = !!me && profile?.id === me.id;
 
   const loading = loadedFor !== (username ?? null);
 
@@ -196,6 +207,29 @@ export default function UserProfile() {
                 {profile.bio}
               </Text>
             )}
+            {me?.id === profile.id && (
+              <button
+                onClick={() => navigate("/settings/profile")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: spacing.sm,
+                  padding: "6px 12px",
+                  borderRadius: radii.pill,
+                  border: `1px solid ${colors.border.subtle}`,
+                  background: "transparent",
+                  color: colors.text.secondary,
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  fontFamily: "inherit",
+                }}
+              >
+                <Pencil size={13} />
+                Edit profile
+              </button>
+            )}
           </div>
         </div>
 
@@ -223,6 +257,132 @@ export default function UserProfile() {
             <Heatmap data={heatmap} weeks={26} />
           </div>
         </div>
+
+        {/* Auto-tracked coding time (Wakatime/Hackatime) */}
+        {codingStats && codingStats.total_seconds > 0 ? (
+          <div
+            style={{
+              background: colors.surface.primary,
+              border: `1px solid ${colors.border.subtle}`,
+              borderRadius: radii.lg,
+              padding: spacing.base,
+              display: "flex",
+              flexDirection: "column",
+              gap: spacing.base,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Keyboard size={15} color={colors.surface.skillhive} />
+              <Text variant="label" tone="secondary" style={{ flex: 1 }}>
+                Coded (auto-tracked)
+              </Text>
+              {isOwnProfile && !codingStats.is_public && (
+                <Text variant="caption" tone="tertiary">
+                  private
+                </Text>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: spacing.lg, flexWrap: "wrap" }}>
+              <div>
+                <Text variant="title" tone="skillhive" weight={900} style={{ lineHeight: 1 }}>
+                  {formatDuration(codingStats.total_seconds)}
+                </Text>
+                <Text variant="caption" tone="tertiary">
+                  total coded
+                </Text>
+              </div>
+              <div>
+                <Text variant="title" tone="skillhive" weight={900} style={{ lineHeight: 1 }}>
+                  {codingStats.current_streak_days}d
+                </Text>
+                <Text variant="caption" tone="tertiary">
+                  coding streak
+                </Text>
+              </div>
+              <div>
+                <Text variant="title" tone="skillhive" weight={900} style={{ lineHeight: 1 }}>
+                  {codingStats.longest_streak_days}d
+                </Text>
+                <Text variant="caption" tone="tertiary">
+                  best streak
+                </Text>
+              </div>
+            </div>
+
+            <MiniHeatmap daily={codingStats.daily_breakdown} />
+
+            {codingStats.language_breakdown.length > 0 && (
+              <LanguageBreakdown breakdown={codingStats.language_breakdown} maxItems={5} />
+            )}
+
+            {isOwnProfile && (
+              <button
+                onClick={() => navigate("/settings/trackers")}
+                style={{
+                  alignSelf: "flex-start",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: colors.text.tertiary,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: "inherit",
+                  padding: 0,
+                }}
+              >
+                Manage tracker →
+              </button>
+            )}
+          </div>
+        ) : isOwnProfile ? (
+          /* Own profile, nothing tracked yet — nudge to connect */
+          <div
+            style={{
+              background: colors.surface.primary,
+              border: `1px solid ${colors.border.subtle}`,
+              borderRadius: radii.lg,
+              padding: spacing.base,
+              display: "flex",
+              flexDirection: "column",
+              gap: spacing.sm,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Keyboard size={15} color={colors.surface.skillhive} />
+              <Text variant="label" tone="secondary" style={{ flex: 1 }}>
+                Show your coding time
+              </Text>
+            </div>
+            <Text variant="bodySm" tone="tertiary">
+              Connect Wakatime or Hackatime and your verified coding hours,
+              languages, and streaks show up here automatically.
+            </Text>
+            <button
+              onClick={() => navigate("/settings/trackers")}
+              style={{
+                alignSelf: "flex-start",
+                padding: "8px 16px",
+                borderRadius: radii.pill,
+                border: "none",
+                background: colors.surface.skillhive,
+                color: "#111",
+                fontSize: 13,
+                fontWeight: 800,
+                fontFamily: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              Connect a time tracker
+            </button>
+          </div>
+        ) : null}
 
         {/* Projects */}
         {projects.length > 0 && (

@@ -1,0 +1,19 @@
+# Daily sync — 03:00 UTC
+#
+# Deploy:
+#   supabase functions deploy time-tracker-sync
+#   supabase secrets set CRON_SECRET=<random>   # SUPABASE_URL + SERVICE_ROLE_KEY are injected automatically
+#
+# Wire up the schedule via pg_cron + pg_net (SQL editor or migration):
+#
+#   select cron.schedule(
+#     'skillhive-time-tracker-sync',
+#     '0 3 * * *',
+#     $$
+#     select net.http_post(
+#       url     := 'https://<project-ref>.supabase.co/functions/v1/time-tracker-sync',
+#       headers := jsonb_build_object('x-cron-secret', '<CRON_SECRET>')
+#     );
+#     $$
+#   );
+schedule: "0 3 * * *"

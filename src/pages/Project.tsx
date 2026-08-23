@@ -3,6 +3,9 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Clock, FolderGit2 } from "lucide-react";
 import { Text } from "@/components/ui";
 import { useTokens } from "@/theme";
+import { useProfile } from "@/hooks/profileContext";
+import { useProjectCodingTime } from "@/hooks/useTimeTracker";
+import { CodingTimeBadge, LanguageBreakdown, WakatimeConnectCard } from "@/components/CodingTime";
 import {
   fetchProjectSummary,
   fetchProjectShipped,
@@ -23,11 +26,15 @@ export default function Project() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { colors, spacing, radii } = useTokens();
+  const { profile: me } = useProfile();
 
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
   const [shipped, setShipped] = useState<ShippedNote[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
+
+  const { coding } = useProjectCodingTime(id);
+  const isOwner = !!me && !!summary?.owner_id && me.id === summary.owner_id;
 
   const loading = loadedFor !== (id ?? null);
 
@@ -166,6 +173,37 @@ export default function Project() {
           <Text variant="body" tone="secondary">
             {summary.description}
           </Text>
+        )}
+
+        {/* Auto-tracked time — owner manages, visitors see it when public */}
+        {isOwner && id ? (
+          <WakatimeConnectCard projectId={id} projectName={summary.name} />
+        ) : (
+          coding && coding.is_public && (
+            <div style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}>
+              <CodingTimeBadge
+                totalSeconds={coding.total_seconds}
+                lastCodedAt={coding.last_coded_at}
+              />
+              {coding.language_breakdown.length > 0 && (
+                <div
+                  style={{
+                    background: colors.surface.primary,
+                    border: `1px solid ${colors.border.subtle}`,
+                    borderRadius: radii.lg,
+                    padding: spacing.base,
+                  }}
+                >
+                  <Text variant="label" tone="secondary">
+                    Languages
+                  </Text>
+                  <div style={{ marginTop: spacing.sm }}>
+                    <LanguageBreakdown breakdown={coding.language_breakdown} maxItems={3} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )
         )}
 
         <div style={{ display: "flex", gap: spacing.sm, flexWrap: "wrap" }}>

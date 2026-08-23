@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Text, Button } from "@/components/ui";
+import { Heatmap } from "@/components/ui/Heatmap";
 import { useTokens } from "@/theme";
 import { useProfile } from "@/hooks/profileContext";
 import {
@@ -18,6 +18,15 @@ import {
   flushSyncQueue,
   fetchMyProjects,
   ensureProject,
+  deleteProject,
+  fetchFocusStats,
+  fetchHeatmap,
+  fetchUserProjects,
+  fetchRecentShipped,
+  type FocusStats,
+  type HeatmapDay,
+  type ProjectWithStats,
+  type ShippedNote,
   type Project,
 } from "@/lib/todayData";
 import {
@@ -40,6 +49,8 @@ import {
   Settings,
   Mic,
   MicOff,
+  Flame,
+  ShieldAlert,
 } from "lucide-react";
 
 const CYCLE_SEC = 3600; // 50m focus + 10m break
@@ -64,9 +75,374 @@ function dateLabel(): string {
   });
 }
 
+function useMinWidth(px: number): boolean {
+  const [wide, setWide] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= px,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${px}px)`);
+    const fn = (e: MediaQueryListEvent) => setWide(e.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, [px]);
+  return wide;
+}
+
+/** Compact weekly-review rail: stats, heatmap, patterns, blockers, shipped. */
+function ReviewRail() {
+  const { colors, spacing, radii } = useTokens();
+  const { profile } = useProfile();
+
+  const [stats, setStats] = useState<FocusStats | null>(null);
+  const [heatmap, setHeatmap] = useState<HeatmapDay[]>([]);
+  const [projects, setProjects] = useState<ProjectWithStats[]>([]);
+  const [shipped, setShipped] = useState<ShippedNote[]>([]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    let cancelled = false;
+    void fetchHeatmap(profile.id, 365).then((h) => !cancelled && setHeatmap(h));
+    void fetchFocusStats(profile.id).then((s) => !cancelled && setStats(s));
+    void fetchUserProjects(profile.id).then((p) => !cancelled && setProjects(p));
+    void fetchRecentShipped(profile.id, 10).then(
+      (s) => !cancelled && setShipped(s),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id]);
+
+  const week = useMemo(() => {
+    const days: HeatmapDay[] = [];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 6);
+    const map = new Map(heatmap.map((h) => [h.day, h]));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(cutoff);
+      d.setDate(cutoff.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      days.push(map.get(key) ?? { day: key, minutes: 0, sessions: 0 });
+    }
+    return {
+      weekMinutes: days.reduce((s, d) => s + d.minutes, 0),
+      activeDays: days.filter((d) => d.minutes > 0).length,
+    };
+  }, [heatmap]);
+
+  const blockers = useMemo(
+    () => shipped.filter((s) => s.blockers && s.blockers.trim()),
+    [shipped],
+  );
+
+  const topProject = useMemo(
+    () =>
+      projects.reduce<ProjectWithStats | null>(
+        (best, p) =>
+          best === null || p.total_minutes > best.total_minutes ? p : best,
+        null,
+      ),
+    [projects],
+  );
+
+  const avgSession =
+    stats && stats.total_sessions > 0
+      ? Math.round(stats.total_minutes / stats.total_sessions)
+      : 0;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.base,
+      }}
+    >
+      <Text
+        variant="caption"
+        tone="tertiary"
+        style={{ textTransform: "uppercase", letterSpacing: 2 }}
+      >
+        This week
+      </Text>
+
+      <div style={{ display: "flex", gap: spacing.sm }}>
+        <RailStat label="focus" value={formatHours(week.weekMinutes)} />
+        <RailStat label="days" value={`${week.activeDays}/7`} />
+        <RailStat label="streak" value={`${stats?.current_streak ?? 0}d`} />
+      </div>
+
+      <div
+        style={{
+          background: colors.surface.primary,
+          border: `1px solid ${colors.border.subtle}`,
+          borderRadius: radii.lg,
+          padding: spacing.base,
+          display: "flex",
+          flexDirection: "column",
+          gap: spacing.sm,
+        }}
+      >
+        <Text variant="label" tone="secondary">
+          Focus activity
+        </Text>
+        <Heatmap data={heatmap} weeks={13} cellSize={9} gap={2} />
+        <RailRow icon={<ListTodo size={14} />} label="Sessions" value={String(stats?.total_sessions ?? 0)} />
+        <RailRow icon={<Clock size={14} />} label="Avg session" value={`${avgSession}m`} />
+        <RailRow
+          icon={<Flame size={14} />}
+          label="Top project"
+          value={topProject ? topProject.name : "—"}
+        />
+      </div>
+
+      {blockers.length > 0 && (
+        <div
+          style={{
+            background: colors.surface.primary,
+            border: `1px solid ${colors.border.subtle}`,
+            borderRadius: radii.lg,
+            padding: spacing.base,
+            display: "flex",
+            flexDirection: "column",
+            gap: spacing.sm,
+          }}
+        >
+          <Text variant="label" tone="secondary">
+            Blockers
+          </Text>
+          {blockers.slice(0, 3).map((b) => (
+            <div key={b.id} style={{ display: "flex", gap: spacing.sm, alignItems: "flex-start" }}>
+              <ShieldAlert size={14} color={colors.tint.warning} style={{ marginTop: 2 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Text variant="caption" tone="secondary" style={{ display: "block" }}>
+                  {b.blockers}
+                </Text>
+                <Text variant="caption" tone="tertiary">
+                  {b.body}
+                </Text>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {shipped.length > 0 && (
+        <div
+          style={{
+            background: colors.surface.primary,
+            border: `1px solid ${colors.border.subtle}`,
+            borderRadius: radii.lg,
+            padding: spacing.base,
+            display: "flex",
+            flexDirection: "column",
+            gap: spacing.sm,
+          }}
+        >
+          <Text variant="label" tone="secondary">
+            Recently shipped
+          </Text>
+          {shipped.slice(0, 4).map((s) => (
+            <div key={s.id} style={{ display: "flex", gap: spacing.sm, alignItems: "flex-start" }}>
+              <Text variant="caption" tone="secondary" style={{ flex: 1, minWidth: 0 }}>
+                {s.body}
+              </Text>
+              <Text variant="caption" tone="tertiary">
+                {s.actual_min ? `${s.actual_min}m` : ""}
+              </Text>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatHours(minutes: number): string {
+  const h = minutes / 60;
+  if (h < 1) return `${minutes}m`;
+  return h >= 10 ? `${Math.round(h)}h` : `${h.toFixed(1)}h`;
+}
+
+function RailStat({ label, value }: { label: string; value: string }) {
+  const { colors, radii } = useTokens();
+  return (
+    <div
+      style={{
+        flex: 1,
+        background: colors.surface.primary,
+        border: `1px solid ${colors.border.subtle}`,
+        borderRadius: radii.lg,
+        padding: "10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
+      <Text variant="body" tone="skillhive" weight={900} style={{ lineHeight: 1 }}>
+        {value}
+      </Text>
+      <Text variant="caption" tone="tertiary">
+        {label}
+      </Text>
+    </div>
+  );
+}
+
+function RailRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  const { colors } = useTokens();
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ color: colors.text.tertiary }}>{icon}</span>
+      <Text variant="caption" tone="secondary" style={{ flex: 1 }}>
+        {label}
+      </Text>
+      <Text variant="caption" weight={600}>
+        {value}
+      </Text>
+    </div>
+  );
+}
+
+/** Manage today-projects: list with focus totals, quick create, delete. */
+function ProjectsCard() {
+  const { colors, spacing, radii } = useTokens();
+  const { profile } = useProfile();
+  const [projects, setProjects] = useState<ProjectWithStats[]>([]);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    let cancelled = false;
+    void fetchUserProjects(profile.id).then(
+      (p) => !cancelled && setProjects(p),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id]);
+
+  async function add() {
+    const trimmed = name.trim();
+    if (!trimmed || busy || !profile?.id) return;
+    setBusy(true);
+    const id = await ensureProject(trimmed);
+    if (id) {
+      const fresh = await fetchUserProjects(profile.id);
+      setProjects(fresh);
+    }
+    setName("");
+    setBusy(false);
+  }
+
+  async function remove(id: string) {
+    setProjects((ps) => ps.filter((p) => p.id !== id));
+    await deleteProject(id);
+  }
+
+  return (
+    <div
+      style={{
+        background: colors.surface.primary,
+        border: `1px solid ${colors.border.subtle}`,
+        borderRadius: radii.lg,
+        padding: spacing.base,
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.sm,
+      }}
+    >
+      <Text variant="label" tone="secondary">
+        Projects
+      </Text>
+
+      {projects.length === 0 ? (
+        <Text variant="bodySm" tone="tertiary">
+          No projects yet. Name one below — it becomes taggable when you capture
+          a session.
+        </Text>
+      ) : (
+        projects.map((p) => (
+          <div
+            key={p.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: spacing.sm,
+              padding: `${spacing.xs}px 0`,
+              borderBottom: `1px solid ${colors.border.subtle}`,
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background:
+                  p.color && p.color !== ""
+                    ? p.color
+                    : colors.surface.skillhive,
+                flexShrink: 0,
+              }}
+            />
+            <Text variant="bodySm" weight={600} style={{ flex: 1, minWidth: 0 }}>
+              {p.name}
+            </Text>
+            <Text variant="caption" tone="tertiary">
+              {formatHours(p.total_minutes)}
+            </Text>
+            <IconBtn label={`Delete ${p.name}`} onClick={() => remove(p.id)}>
+              <X size={13} />
+            </IconBtn>
+          </div>
+        ))
+      )}
+
+      <div style={{ display: "flex", gap: spacing.sm }}>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void add();
+          }}
+          placeholder="New project name…"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            border: `1px solid ${colors.border.default}`,
+            borderRadius: radii.md,
+            padding: "9px 12px",
+            fontSize: 14,
+            background: colors.bg.muted,
+            color: colors.text.primary,
+            outline: "none",
+            fontFamily: "inherit",
+          }}
+        />
+        <Button
+          label={busy ? "Adding…" : "Add project"}
+          size="sm"
+          onClick={() => void add()}
+          disabled={busy || !name.trim()}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const today = useToday();
+  const { colors, spacing } = useTokens();
   const [mode, setMode] = useState<"intent" | "focus">("intent");
+  const wide = useMinWidth(1180);
 
   useEffect(() => {
     document.body.classList.toggle("focus-mode", mode === "focus");
@@ -83,14 +459,61 @@ export default function Home() {
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.removeEventListener("online", onOnline);
-      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
+  // Focus mode stays a distraction-free full-screen view (no rail).
   if (mode === "focus") {
     return <FocusView today={today} onExit={() => setMode("intent")} />;
   }
-  return <IntentView today={today} onStartFocus={() => setMode("focus")} />;
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: colors.bg.muted,
+        paddingTop: 96,
+        paddingBottom: 160,
+        fontFamily:
+          '"popreg", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: wide ? 1100 : 640,
+          margin: "0 auto",
+          padding: `0 ${spacing.base}px`,
+          display: "flex",
+          flexDirection: wide ? "row" : "column",
+          alignItems: "flex-start",
+          gap: spacing.xl,
+        }}
+      >
+        <div
+          style={{
+            flex: wide ? "1 1 640px" : undefined,
+            minWidth: 0,
+            width: "100%",
+            maxWidth: wide ? 640 : undefined,
+            margin: wide ? undefined : "0 auto",
+          }}
+        >
+          <IntentView today={today} onStartFocus={() => setMode("focus")} />
+        </div>
+        <aside
+          style={{
+            width: wide ? 320 : "100%",
+            flexShrink: 0,
+            position: wide ? "sticky" : undefined,
+            top: wide ? 96 : undefined,
+          }}
+        >
+          <ReviewRail />
+        </aside>
+      </div>
+    </div>
+  );
 }
 
 /* ─────────────────────────── INTENT PHASE ─────────────────────────── */
@@ -104,7 +527,6 @@ function IntentView({
 }) {
   const { colors, spacing, radii } = useTokens();
   const { profile } = useProfile();
-  const navigate = useNavigate();
   const name = profile?.displayname ?? "there";
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -144,24 +566,13 @@ function IntentView({
   return (
     <div
       style={{
-        minHeight: "100vh",
-        background: colors.bg.muted,
-        paddingTop: 96,
-        paddingBottom: 160,
-        fontFamily:
-          '"popreg", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.lg,
+        minWidth: 0,
+        width: "100%",
       }}
     >
-      <div
-        style={{
-          maxWidth: 640,
-          margin: "0 auto",
-          padding: `0 ${spacing.base}px`,
-          display: "flex",
-          flexDirection: "column",
-          gap: spacing.lg,
-        }}
-      >
         <div>
           <Text
             variant="caption"
@@ -190,14 +601,6 @@ function IntentView({
           >
             What must happen today?
           </Text>
-          <Button
-            label="Weekly review"
-            size="sm"
-            variant="ghost"
-            icon={<Sparkles size={14} />}
-            style={{ marginTop: spacing.md }}
-            onClick={() => navigate("/review")}
-          />
         </div>
 
         {today.carryFrom.length > 0 && (
@@ -418,8 +821,9 @@ function IntentView({
             ))}
           </div>
         )}
+
+        <ProjectsCard />
       </div>
-    </div>
   );
 }
 

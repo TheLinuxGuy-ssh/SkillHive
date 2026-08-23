@@ -42,6 +42,7 @@ export interface ProjectSummary {
   description: string | null;
   created_at: string;
   owner_username: string | null;
+  owner_id?: string | null;
   total_minutes: number;
   total_sessions: number;
   shipped_count: number;
@@ -199,6 +200,19 @@ export async function ensureProject(
   }
 }
 
+/** Delete a today-project by id (owner-scoped via RLS). */
+export async function deleteProject(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("today_projects")
+      .delete()
+      .eq("id", id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchMyProjects(): Promise<Project[]> {
   const user_id = await currentUserId();
   if (!user_id) return [];
@@ -298,6 +312,7 @@ export async function fetchProjectSummary(
       description: (r.description as string) ?? null,
       created_at: String(r.created_at ?? ""),
       owner_username: (r.owner_username as string) ?? null,
+      owner_id: (r.owner_id as string) ?? null,
       total_minutes: Number(r.total_minutes ?? 0),
       total_sessions: Number(r.total_sessions ?? 0),
       shipped_count: Number(r.shipped_count ?? 0),
